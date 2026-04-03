@@ -1,17 +1,14 @@
 const express = require('express');
-const cors = require('cors'); // Line 1
-const app = express();
-app.use(cors()); // Line 2
-app.use(express.json());
-const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 
 const app = express();
+
+// Middlewares - These must come BEFORE your routes
 app.use(cors());
 app.use(express.json());
 
-// 1. Database Connection
+// 1. Database Connection (MongoDB Atlas)
 const MONGO_URI = "mongodb+srv://rnzthv_db_user:v6091IDpETsLXmag@techno.0llnfzm.mongodb.net/ge_finder?retryWrites=true&w=majority";
 
 mongoose.connect(MONGO_URI)
