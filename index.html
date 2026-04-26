@@ -515,8 +515,7 @@
         const phProvinces = [
             "Abra", "Agusan del Norte", "Agusan del Sur", "Aklan", "Albay", "Antique", "Apayao", "Aurora", "Basilan", "Bataan", "Batanes", "Batangas", "Benguet", "Biliran", "Bohol", "Bukidnon", "Bulacan", "Cagayan", "Camarines Norte", "Camarines Sur", "Camiguin", "Capiz", "Catanduanes", "Cavite", "Cebu", "Cotabato", "Davao de Oro", "Davao del Norte", "Davao del Sur", "Davao Occidental", "Davao Oriental", "Dinagat Islands", "Eastern Samar", "Guimaras", "Ifugao", "Ilocos Norte", "Ilocos Sur", "Iloilo", "Isabela", "Kalinga", "La Union", "Laguna", "Lanao del Norte", "Lanao del Sur", "Leyte", "Maguindanao del Norte", "Maguindanao del Sur", "Marinduque", "Masbate", "Misamis Occidental", "Misamis Oriental", "Mountain Province", "Negros Occidental", "Negros Oriental", "Northern Samar", "Nueva Ecija", "Nueva Vizcaya", "Occidental Mindoro", "Oriental Mindoro", "Palawan", "Pampanga", "Pangasinan", "Quezon", "Quirino", "Rizal", "Romblon", "Samar", "Sarangani", "Siquijor", "Sorsogon", "South Cotabato", "Southern Leyte", "Sultan Kudarat", "Sulu", "Surigao del Norte", "Surigao del Sur", "Tarlac", "Tawi-Tawi", "Zambales", "Zamboanga del Norte", "Zamboanga del Sur", "Zamboanga Sibugay", "Metro Manila"
         ];
-
-        window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', () => {
             const splash = document.getElementById('splash-screen');
             
             // 1. POPULATE PROVINCE DATALIST
@@ -526,34 +525,7 @@
                     const option = document.createElement('option');
                     option.value = province;
                     datalist.appendChild(option);
-
-                    // --- ADD THIS AUTH NAVIGATION LOGIC ---
-            const token = localStorage.getItem('token');
-            const userRole = localStorage.getItem('userRole');
-            const navLinks = document.getElementById('nav-links'); // Ensure your <ul> or <div> has this ID
-
-            if (token && navLinks) {
-                // Clear "Login" and show "Logout"
-                navLinks.innerHTML = `<li><button class="btn btn-logout" onclick="logout()" style="background:#cc3300; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">Logout</button></li>`;
-
-                if (userRole === 'client') {
-                    // Add "My Inquiries" for clients
-                    navLinks.insertAdjacentHTML('afterbegin', 
-                        `<li><a href="client-dashboard.html" style="color:white; text-decoration:none; margin-right:20px; font-weight:bold;">My Inquiries</a></li>`
-                    );
-                } else if (userRole === 'engineer') {
-                    // Add "Dashboard" for engineers
-                    navLinks.insertAdjacentHTML('afterbegin', 
-                        `<li><a href="engineer-dashboard.html" style="color:white; text-decoration:none; margin-right:20px; font-weight:bold;">Dashboard</a></li>`
-                    );
-                }
-            }
                 });
-
-                function logout() {
-                    localStorage.clear();
-                    window.location.reload();
-                }
             }
 
             // 2. POPULATE SURVEY TYPE & COST SELECTS
@@ -584,21 +556,31 @@
                 }
             }
 
-            // 3. HANDLE LOGIN STATE (THE "LOGGED IN" LOOK)
-            const userName = localStorage.getItem('userName');
+            // 3. AUTHENTICATION UI LOGIC (CLEANED UP)
+            const token = localStorage.getItem('token');
             const userRole = localStorage.getItem('userRole');
+            const navLinks = document.getElementById('nav-links');
             const authLink = document.getElementById('authLink');
 
-            if (userName && authLink) {
-                authLink.innerHTML = `Hi, ${userName.split(' ')[0]} <span style="font-size:0.7rem; opacity:0.8;">(${userRole})</span>`;
-                authLink.href = (userRole === 'engineer') ? 'engineer-dashboard.html' : '#';
-                authLink.style.background = "#1e3d1a";
+            if (token && navLinks && authLink) {
+                // Remove the Login button
+                authLink.remove();
 
-                const logoutBtn = document.createElement('a');
-                logoutBtn.innerHTML = "Logout";
-                logoutBtn.style.cssText = "background:#cc3300; color:white; padding:5px 10px; border-radius:4px; margin-left:10px; cursor:pointer; font-size:0.8rem; font-weight:bold;";
-                logoutBtn.onclick = logout;
-                authLink.parentElement.appendChild(logoutBtn);
+                // Add Dashboard link based on role
+                if (userRole === 'client') {
+                    navLinks.insertAdjacentHTML('beforeend', 
+                        `<a href="client-dashboard.html" style="margin-right:15px; color:var(--primary); text-decoration:none; font-weight:bold;">My Inquiries</a>`
+                    );
+                } else if (userRole === 'engineer') {
+                    navLinks.insertAdjacentHTML('beforeend', 
+                        `<a href="engineer-dashboard.html" style="margin-right:15px; color:var(--primary); text-decoration:none; font-weight:bold;">Dashboard</a>`
+                    );
+                }
+
+                // Add the Logout button
+                navLinks.insertAdjacentHTML('beforeend', 
+                    `<a onclick="logout()" style="background: #cc3300; color: white; cursor: pointer; padding: 8px 15px; border-radius: 5px; margin-left: 10px; font-weight: bold; text-decoration:none;">Logout</a>`
+                );
             }
 
             // 4. SPLASH SCREEN FADE
@@ -642,7 +624,7 @@
 
         async function runSearch() {
             const locInput = document.getElementById('loc').value.trim();
-            const specSelect = document.getElementById('type'); // Changed to specific ID
+            const specSelect = document.getElementById('type');
             const specValue = specSelect ? specSelect.value : "";
             
             const res = document.getElementById('results');
@@ -712,11 +694,6 @@
             display.textContent = foundRange;
         }
 
-        function logout() {
-            localStorage.clear();
-            window.location.href = 'index.html';
-        }
-
         function openInquiryForm(engId, engName) {
             const userName = localStorage.getItem('userName');
             
@@ -726,14 +703,10 @@
                 return;
             }
 
-            // 1. Show the section first
             showSection('inquiry-page');
-            
-            // 2. Force flex display for centering (since showSection might use 'block')
             const inqPage = document.getElementById('inquiry-page');
             inqPage.style.display = 'flex'; 
 
-            // 3. NOW set the values
             document.getElementById('targetEngineerId').value = engId;
             document.getElementById('targetEngineerName').innerText = engName;
         }
@@ -744,7 +717,7 @@
             const lotSize = document.getElementById('inqSize').value;
             const message = document.getElementById('inqNotes').value;
             const clientName = localStorage.getItem('userName');
-            const token = localStorage.getItem('token'); // Security check
+            const token = localStorage.getItem('token');
 
             if(!location || !lotSize) return alert("Please fill in the required fields.");
 
@@ -767,6 +740,8 @@
                 alert("Error sending inquiry. Is the server online?");
             }
         }
+
+        // GLOBAL LOGOUT FUNCTION
         function logout() {
             localStorage.clear();
             alert("You have been logged out.");
