@@ -42,7 +42,7 @@ const Inquiry = mongoose.model('Inquiry', new mongoose.Schema({
     clientEmail: String,
     location: String,
     lotSize: String,
-    // This MUST be an array to support back-and-forth
+    // CRITICAL: This must be an array of objects
     messages: [{
         sender: { type: String, enum: ['client', 'engineer'] },
         text: String,
