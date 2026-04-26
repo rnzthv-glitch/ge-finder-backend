@@ -437,46 +437,47 @@
         </div>
     </section>
 
-    <section id="get-listed">
-        <div class="card">
-            <h2 style="text-align: center; margin-bottom: 5px;">Get Listed on GE Finder</h2>
-            <form onsubmit="showSection('success'); return false;">
-                <div class="radio-grid">
-                    <p>Are you applying as:</p>
-                    <input type="radio" name="role" id="indiv" checked>
-                    <label for="indiv">Individual Licensed Geodetic Engineer</label>
-                    <input type="radio" name="role" id="firm">
-                    <label for="firm">Surveying Firm</label>
-                </div>
+<section id="get-listed">
+    <div class="card">
+        <h2 style="text-align: center; margin-bottom: 5px;">Get Listed on GE Finder</h2>
+        
+        <form id="listingForm" onsubmit="submitApplication(event)">
+            <div class="radio-grid">
+                <p>Are you applying as:</p>
+                <input type="radio" name="role" id="indiv" checked>
+                <label for="indiv">Individual Licensed Geodetic Engineer</label>
+                <input type="radio" name="role" id="firm">
+                <label for="firm">Surveying Firm</label>
+            </div>
 
-                <h4 style="border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 15px;">Professional Information</h4>
-                <div class="form-row">
-                    <div><label>Full Name</label><input type="text" placeholder="John Doe" required></div>
-                    <div><label>Contact Email</label><input type="email" placeholder="john@example.com" required></div>
-                </div>
-                <div class="form-row">
-                    <div><label>PRC License Number</label><input type="text" placeholder="0012345" required></div>
-                    <div><label>Contact Number</label><input type="text" placeholder="0917XXXXXXX" required></div>
-                </div>
+            <h4 style="border-bottom: 1px solid #eee; padding-bottom: 5px; margin-bottom: 15px;">Professional Information</h4>
+            <div class="form-row">
+                <div><label>Full Name</label><input type="text" id="appName" placeholder="John Doe" required></div>
+                <div><label>Contact Email</label><input type="email" id="appEmail" placeholder="john@example.com" required></div>
+            </div>
+            <div class="form-row">
+                <div><label>PRC License Number</label><input type="text" id="appLicense" placeholder="0012345" required></div>
+                <div><label>Contact Number</label><input type="text" id="appContact" placeholder="0917XXXXXXX" required></div>
+            </div>
 
-                <h4 style="border-bottom: 1px solid #eee; padding-bottom: 5px; margin: 25px 0 15px 0;">Upload Verification Documents</h4>
-                <div class="form-row">
-                    <div class="upload-box">
-                        <span class="upload-icon">📤</span>
-                        <label style="color: var(--primary);">Upload PRC ID (Front & Back)</label>
-                        <input type="file" required style="border:none; padding:0; font-size: 0.8rem;">
-                    </div>
-                    <div class="upload-box">
-                        <span class="upload-icon">📤</span>
-                        <label style="color: var(--primary);">Certificate of Registration</label>
-                        <input type="file" required style="border:none; padding:0; font-size: 0.8rem;">
-                    </div>
+            <h4 style="border-bottom: 1px solid #eee; padding-bottom: 5px; margin: 25px 0 15px 0;">Upload Verification Documents</h4>
+            <div class="form-row">
+                <div class="upload-box">
+                    <span class="upload-icon">📤</span>
+                    <label style="color: var(--primary);">Upload PRC ID (Front & Back)</label>
+                    <input type="file" required style="border:none; padding:0; font-size: 0.8rem;">
                 </div>
+                <div class="upload-box">
+                    <span class="upload-icon">📤</span>
+                    <label style="color: var(--primary);">Certificate of Registration</label>
+                    <input type="file" required style="border:none; padding:0; font-size: 0.8rem;">
+                </div>
+            </div>
 
-                <button type="submit" class="btn" style="width:100%; padding: 16px; margin-top: 25px;">Submit for Review</button>
-            </form>
-        </div>
-    </section>
+            <button type="submit" class="btn" style="width:100%; padding: 16px; margin-top: 25px;">Submit for Review</button>
+        </form>
+    </div>
+</section>
 
     <section id="success">
         <div class="card" style="max-width: 500px; text-align: center;">
@@ -684,6 +685,32 @@ window.addEventListener('DOMContentLoaded', () => {
                 }
             } catch (error) {
                 res.innerHTML = `<div class="empty-state">Error connecting to the expert database.</div>`;
+            }
+        }
+        
+        async function submitApplication(event) {
+            event.preventDefault(); // Stop the page from refreshing
+
+            const formData = {
+                role: document.querySelector('input[name="role"]:checked').id === 'indiv' ? 'Individual' : 'Firm',
+                fullName: document.getElementById('appName').value,
+                email: document.getElementById('appEmail').value,
+                licenseNumber: document.getElementById('appLicense').value,
+                contactNumber: document.getElementById('appContact').value
+            };
+
+            try {
+                const response = await fetch('https://ge-finder-backend.onrender.com/api/applications', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    showSection('success'); // Shows the success message if saved
+                }
+            } catch (err) {
+                alert("Error connecting to server. Is the backend live?");
             }
         }
 
