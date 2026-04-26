@@ -97,9 +97,6 @@ app.post('/api/login', async (req, res) => {
 });
 
 
-  
-
-
 // PASTE THE NEW ROUTE HERE
 app.get('/api/client-inquiries', async (req, res) => {
     try {
@@ -110,6 +107,28 @@ app.get('/api/client-inquiries', async (req, res) => {
         res.json(inquiries);
     } catch (err) {
         res.status(500).json({ error: "Server error fetching inquiries" });
+    }
+});
+
+// NEW: Application Model
+const Application = mongoose.model('Application', new mongoose.Schema({
+    role: String,
+    fullName: String,
+    email: String,
+    licenseNumber: String,
+    contactNumber: String,
+    status: { type: String, default: 'Pending' },
+    date: { type: Date, default: Date.now }
+}));
+
+// NEW: Handle Form Submissions
+app.post('/api/applications', async (req, res) => {
+    try {
+        const newApp = new Application(req.body);
+        await newApp.save();
+        res.status(201).json({ message: "Application submitted successfully!" });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to submit application." });
     }
 });
 
