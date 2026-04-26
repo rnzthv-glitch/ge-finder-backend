@@ -127,3 +127,17 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`🚀 Server is running on port ${PORT}`);
 });
+
+// Get a specific engineer by ID
+app.get('/api/engineers/:id', async (req, res) => {
+    try {
+        const engineer = await Engineer.findById(req.params.id);
+        if (!engineer) {
+            return res.status(404).json({ error: "Engineer not found" });
+        }
+        res.json(engineer);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Invalid Engineer ID" });
+    }
+});
