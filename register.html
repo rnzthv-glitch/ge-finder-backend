@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - GE Finder</title>
+    <style>
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            margin: 0; 
+            height: 100vh; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('bg.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+
+        .card { 
+            background: rgba(255, 255, 255, 0.95); 
+            padding: 35px; 
+            border-radius: 20px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+            width: 100%; 
+            max-width: 380px; 
+            text-align: center; 
+            backdrop-filter: blur(5px);
+        }
+
+        h2 { color: #2d5a27; margin-bottom: 15px; }
+
+        input { 
+            width: 100%; 
+            padding: 12px; 
+            margin: 8px 0; 
+            border-radius: 8px; 
+            border: 1px solid #ddd; 
+            box-sizing: border-box; 
+            font-size: 0.95rem;
+        }
+
+        button { 
+            width: 100%; 
+            padding: 12px; 
+            margin-top: 15px; 
+            background: #2d5a27; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            cursor: pointer; 
+            font-size: 1rem;
+            transition: 0.3s; 
+        }
+
+        button:hover { background: #1e3d1a; }
+
+        .back-link { 
+            display: block; 
+            margin-top: 15px; 
+            font-size: 0.9rem; 
+            color: #666; 
+            text-decoration: none; 
+            transition: 0.2s;
+        }
+
+        .back-link:hover { color: #2d5a27; text-decoration: underline; }
+
+        #msg { font-size: 0.9rem; margin-top: 10px; min-height: 1.2rem; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Client Registration</h2>
+        <p style="font-size: 0.9rem; color: #666;">Create an account to save contacts and view estimated costs.</p>
+        
+        <input type="text" id="regName" placeholder="Full Name">
+        <input type="email" id="regEmail" placeholder="Email Address">
+        <input type="password" id="regPassword" placeholder="Create Password">
+        
+        <input type="hidden" id="regRole" value="client">
+
+        <p id="msg"></p>
+
+        <button onclick="register()">Create Account</button>
+        
+        <a href="index.html" class="back-link">← Back to Homepage</a>
+
+        <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee;">
+            <p style="font-size: 0.85rem; color: #555;">
+                <strong>Are you a professional GE?</strong><br>
+                Engineers must apply via 
+                <a href="index.html#get-listed" style="color: #2d5a27; font-weight: bold; text-decoration: none;">Get Listed</a> 
+                for verification.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        async function register() {
+            const name = document.getElementById('regName').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const role = document.getElementById('regRole').value;
+            const msg = document.getElementById('msg');
+
+            // Reset message
+            msg.innerText = "";
+
+            if(!name || !email || !password) {
+                msg.innerText = "Please fill in all fields.";
+                msg.style.color = "red";
+                return;
+            }
+
+            try {
+                // Visual feedback for the user
+                const btn = document.querySelector('button');
+                btn.innerText = "Creating Account...";
+                btn.disabled = true;
+
+                const response = await fetch('https://ge-finder-backend.onrender.com/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password, role })
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert("Account created successfully!");
+                    window.location.href = 'login.html';
+                } else {
+                    msg.innerText = data.error || "Registration failed.";
+                    msg.style.color = "red";
+                    btn.innerText = "Create Account";
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                alert("Connection Error. Your backend might be waking up (Render free tier). Please try again in 30 seconds.");
+                const btn = document.querySelector('button');
+                btn.innerText = "Create Account";
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
