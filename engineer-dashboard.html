@@ -7,7 +7,6 @@
     <style>
         :root { --primary: #2d5a27; --dark: #1e3d1a; --light: #f4fbf4; --gold: #fbbf24; }
         
-        /* Updated Background Logic */
         body { 
             font-family: 'Segoe UI', sans-serif; 
             margin: 0; 
@@ -16,7 +15,6 @@
             background-size: cover;
         }
 
-        /* Dark Overlay to make white cards pop */
         body::before {
             content: '';
             position: fixed;
@@ -97,14 +95,24 @@
     <div id="detailsModal" class="modal">
         <div class="modal-content">
             <h2 style="color:var(--primary); margin-top:0;">Project Details</h2>
+            <p><strong>Client Message:</strong></p>
+            <p id="modalMessage" style="background:#f9f9f9; padding:10px; border-radius:8px;"></p>
+            
             <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
-            <p><strong>Notes/Message:</strong></p>
-            <p id="modalMessage" style="color:#555; line-height:1.5; background:#f9f9f9; padding:15px; border-radius:8px;"></p>
-            <button class="btn" style="width:100%; margin-top:10px;" onclick="closeModal()">Close</button>
+            
+            <p><strong>Your Reply:</strong></p>
+            <textarea id="replyText" style="width:100%; height:80px; padding:10px; border-radius:8px; border:1px solid #ccc; font-family:inherit;" placeholder="Type your response or quote here..."></textarea>
+            
+            <div style="display:flex; gap:10px; margin-top:15px;">
+                <button class="btn" style="flex:1;" onclick="sendReply()">Send Reply</button>
+                <button class="btn" style="flex:1; background:#888;" onclick="closeModal()">Close</button>
+            </div>
         </div>
     </div>
 
     <script>
+        let currentInquiryId = null;
+
         document.addEventListener('DOMContentLoaded', () => {
             const name = localStorage.getItem('userName');
             const role = localStorage.getItem('userRole');
@@ -132,19 +140,27 @@
                 countDisplay.innerText = inquiries.length;
 
                 if (inquiries.length === 0) {
-                    list.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:30px; color:#888;'>No inquiries found yet. Keep your profile updated!</td></tr>";
+                    list.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:30px; color:#888;'>No inquiries found yet.</td></tr>";
                     return;
                 }
 
                 inquiries.reverse().forEach(inq => {
+                    const isReplied = inq.reply && inq.reply.trim() !== "";
+                    
+                    const statusBadge = isReplied 
+                        ? `<span style="background:#e8f5e9; color:#2e7d32; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;">Replied</span>`
+                        : `<span style="background:#fff3e0; color:#e65100; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;">New</span>`;
+
                     const row = `
                         <tr>
                             <td><strong>${inq.clientName}</strong></td>
                             <td>${inq.location}</td>
                             <td>${inq.lotSize} sqm</td>
-                            <td><span style="background:#fff3e0; color:#e65100; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;">New</span></td>
+                            <td>${statusBadge}</td>
                             <td>
-                                <button class="btn" onclick="showInquiryDetails('${inq.message}')">View Details</button>
+                                <button class="btn" onclick="showInquiryDetails('${inq.message}', '${inq._id}', '${inq.reply || ''}')">
+                                    ${isReplied ? 'View Reply' : 'View Details'}
+                                </button>
                             </td>
                         </tr>
                     `;
@@ -152,13 +168,40 @@
                 });
 
             } catch (err) {
-                list.innerHTML = "<tr><td colspan='5' style='text-align:center; color:red;'>Failed to load data. Please check connection.</td></tr>";
+                list.innerHTML = "<tr><td colspan='5' style='text-align:center; color:red;'>Failed to load data.</td></tr>";
             }
         }
 
-        function showInquiryDetails(msg) {
+        function showInquiryDetails(msg, id, existingReply) {
+            currentInquiryId = id;
             document.getElementById('modalMessage').innerText = msg || "No additional notes provided.";
+            document.getElementById('replyText').value = existingReply || "";
             document.getElementById('detailsModal').style.display = 'flex';
+        }
+
+        async function sendReply() {
+            const replyValue = document.getElementById('replyText').value;
+            
+            if (!replyValue.trim()) {
+                alert("Please enter a message before sending.");
+                return;
+            }
+
+            try {
+                const response = await fetch(`https://ge-finder-backend.onrender.com/api/inquiries/${currentInquiryId}/reply`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ reply: replyValue })
+                });
+
+                if (response.ok) {
+                    alert("Reply saved successfully!");
+                    closeModal();
+                    loadInquiries();
+                }
+            } catch (err) {
+                alert("Failed to connect to server.");
+            }
         }
 
         function closeModal() {
