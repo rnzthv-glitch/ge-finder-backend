@@ -180,27 +180,56 @@
         }
 
         async function sendReply() {
-            const replyValue = document.getElementById('replyText').value;
+            const replyTextarea = document.getElementById('replyText');
+            const replyValue = replyTextarea.value;
             
+            console.log("Attempting to send reply for ID:", currentInquiryId);
+
+            if (!currentInquiryId) {
+                alert("Error: No inquiry ID found. Please refresh and try again.");
+                return;
+            }
+
             if (!replyValue.trim()) {
                 alert("Please enter a message before sending.");
                 return;
             }
 
             try {
+                // Change button text so you know it's working
+                const sendBtn = document.querySelector('button[onclick="sendReply()"]');
+                const originalText = sendBtn.innerText;
+                sendBtn.innerText = "Sending...";
+                sendBtn.disabled = true;
+
                 const response = await fetch(`https://ge-finder-backend.onrender.com/api/inquiries/${currentInquiryId}/reply`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ reply: replyValue })
                 });
 
+                const result = await response.json();
+
                 if (response.ok) {
-                    alert("Reply saved successfully!");
+                    alert("✅ " + result.message); // This should pop up "Reply saved!"
                     closeModal();
-                    loadInquiries();
+                    await loadInquiries(); // This refreshes the table to show "Replied"
+                } else {
+                    alert("❌ Server Error: " + (result.error || "Unknown error"));
                 }
+                
+                // Reset button
+                sendBtn.innerText = originalText;
+                sendBtn.disabled = false;
+
             } catch (err) {
-                alert("Failed to connect to server.");
+                console.error("Connection Error:", err);
+                alert("❌ Connection Error: Could not reach the backend. Check your internet or Render status.");
+                
+                // Reset button
+                const sendBtn = document.querySelector('button[onclick="sendReply()"]');
+                sendBtn.innerText = "Send Reply";
+                sendBtn.disabled = false;
             }
         }
 

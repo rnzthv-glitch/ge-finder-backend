@@ -10,7 +10,7 @@ const app = express();
 app.use(cors()); 
 app.use(express.json()); 
 
-// 1. Database Connection
+// 1. DATABASE CONNECTION
 const MONGO_URI = "mongodb+srv://rnzthv_db_user:v6091IDpETsLXmag@techno.0llnfzm.mongodb.net/ge_finder?retryWrites=true&w=majority";
 
 mongoose.connect(MONGO_URI)
@@ -39,9 +39,11 @@ const Engineer = mongoose.model('Engineer', new mongoose.Schema({
 const Inquiry = mongoose.model('Inquiry', new mongoose.Schema({
     engineerId: String,
     clientName: String,
+    clientEmail: String,
     location: String,
     lotSize: String,
     message: String,
+    reply: { type: String, default: "" }, 
     date: { type: Date, default: Date.now }
 }));
 
@@ -54,24 +56,20 @@ app.post('/api/register', async (req, res) => {
         if (existingUser) return res.status(400).json({ error: "Email already registered" });
 
         const hashedPassword = await bcrypt.hash(password, 10);
-        
-        // Save the User
         const newUser = new User({ name, email, password: hashedPassword, role });
         const savedUser = await newUser.save();
 
-        // If they are an engineer, create their profile document immediately
         if (role === 'engineer') {
             const newProfile = new Engineer({
-                _id: savedUser._id, // Match the User ID so profile.html works instantly
+                _id: savedUser._id, 
                 name: name,
                 email: email,
-                location: "Batangas", // Default location for your thesis
+                location: "San Pascual, Batangas", 
                 specialization: "General",
                 contactNumber: "Not Provided"
             });
             await newProfile.save();
         }
-
         res.status(201).json({ message: "User registered successfully!" });
     } catch (err) {
         res.status(500).json({ error: "Registration failed." });
@@ -92,15 +90,15 @@ app.post('/api/login', async (req, res) => {
             'GE_FINDER_SECRET_KEY_2026', 
             { expiresIn: '1d' }
         );
-
         res.json({ token, role: user.role, name: user.name });
     } catch (err) {
         res.status(500).json({ error: "Login failed" });
     }
 });
 
-// 4. INQUIRY ROUTES
+// 4. INQUIRY & REPLY ROUTES
 
+// SEND Inquiry
 app.post('/api/inquiries', async (req, res) => {
     try {
         const newInquiry = new Inquiry(req.body);
@@ -111,12 +109,28 @@ app.post('/api/inquiries', async (req, res) => {
     }
 });
 
+// GET Inquiries for Dashboard
 app.get('/api/my-inquiries', async (req, res) => {
     try {
         const inquiries = await Inquiry.find().sort({ date: -1 });
         res.status(200).json(inquiries);
     } catch (err) {
         res.status(500).json({ error: "Database connection failed" });
+    }
+});
+
+// SUBMIT a Reply (This fixes your dashboard issue!)
+app.put('/api/inquiries/:id/reply', async (req, res) => {
+    try {
+        const { reply } = req.body;
+        const updatedInquiry = await Inquiry.findByIdAndUpdate(
+            req.params.id, 
+            { reply: reply }, 
+            { new: true }
+        );
+        res.json({ message: "Reply saved!", updatedInquiry });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to save reply" });
     }
 });
 
@@ -133,13 +147,10 @@ app.get('/api/engineers', async (req, res) => {
     }
 });
 
-// THE KEY FIX: Get specific engineer by ID
 app.get('/api/engineers/:id', async (req, res) => {
     try {
         const engineer = await Engineer.findById(req.params.id);
-        if (!engineer) {
-            return res.status(404).json({ error: "Engineer profile not found" });
-        }
+        if (!engineer) return res.status(404).json({ error: "Engineer not found" });
         res.json(engineer);
     } catch (err) {
         res.status(500).json({ error: "Invalid Engineer ID" });
