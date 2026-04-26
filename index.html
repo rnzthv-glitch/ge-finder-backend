@@ -131,7 +131,7 @@
         .logo-img { height: 45px; width: auto; }
         .logo-text { font-size: 1.1rem; font-weight: 800; color: var(--primary); margin-top: -2px; letter-spacing: 0.5px; text-transform: uppercase; }
         
-        .nav-links a { margin-left: 20px; text-decoration: none; color: #444; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        #nav-links a { margin-left: 20px; text-decoration: none; color: #444; font-weight: 600; cursor: pointer; transition: 0.2s; }
         .nav-links a:hover { color: var(--primary); }
 
         section { 
@@ -566,14 +566,14 @@ window.addEventListener('DOMContentLoaded', () => {
                 // Remove the Login button
                 authLink.remove();
 
-                // Add Dashboard link based on role
+                // 2. Add Dashboard link based on role
                 if (userRole === 'client') {
                     navLinks.insertAdjacentHTML('beforeend', 
-                        `<a href="client-dashboard.html" style="margin-right:15px; color:var(--primary); text-decoration:none; font-weight:bold;">My Inquiries</a>`
+                        `<a href="client-dashboard.html" style="margin-right:15px; color:var(--primary); text-decoration:none; font-weight: 600;">My Inquiries</a>`
                     );
                 } else if (userRole === 'engineer') {
                     navLinks.insertAdjacentHTML('beforeend', 
-                        `<a href="engineer-dashboard.html" style="margin-right:15px; color:var(--primary); text-decoration:none; font-weight:bold;">Dashboard</a>`
+                        `<a href="engineer-dashboard.html" style="margin-right:15px; color:var(--primary); text-decoration:none; font-weight: 600;">Dashboard</a>`
                     );
                 }
 

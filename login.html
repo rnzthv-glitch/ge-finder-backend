@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - GE Finder</title>
+    <style>
+        :root { --primary: #2d5a27; --dark: #1e3d1a; }
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            margin: 0; height: 100vh; display: flex; 
+            justify-content: center; align-items: center; 
+            background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url('bg.png');
+            background-size: cover; background-position: center;
+        }
+
+        .card { 
+            background: rgba(255, 255, 255, 0.95); padding: 40px; 
+            border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+            width: 90%; max-width: 380px; text-align: center; backdrop-filter: blur(5px);
+        }
+
+        .password-container { position: relative; width: 100%; }
+        
+        input { 
+            width: 100%; padding: 12px; margin: 10px 0; 
+            border-radius: 8px; border: 1px solid #ddd; 
+            box-sizing: border-box; font-size: 1rem;
+        }
+
+        /* The "Show" text inside the input */
+        .toggle-password {
+            position: absolute; right: 10px; top: 20px;
+            cursor: pointer; font-size: 0.8rem; color: var(--primary);
+            font-weight: bold; user-select: none;
+        }
+
+        button { 
+            width: 100%; padding: 12px; margin-top: 15px; 
+            background: var(--primary); color: white; border: none; 
+            border-radius: 8px; font-weight: bold; cursor: pointer; 
+            transition: 0.3s;
+        }
+
+        button:hover { background: var(--dark); }
+        .link { display: block; margin-top: 20px; font-size: 0.85rem; color: #666; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2 style="color: var(--primary);">Welcome Back</h2>
+        
+        <input type="email" id="logEmail" placeholder="Email Address">
+        
+        <div class="password-container">
+            <input type="password" id="logPassword" placeholder="Password">
+            <span class="toggle-password" onclick="togglePassword()">SHOW</span>
+        </div>
+
+        <button onclick="login()">Login</button>
+        
+        <p id="msg"></p>
+
+        <a href="register.html" class="link">Client? Create an account</a>
+        
+        <div style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #eee;">
+            <p style="font-size: 0.85rem; color: #555;">
+                <strong>Geodetic Engineers:</strong><br>
+                Verification required. Use credentials provided after your "Get Listed" approval.
+            </p>
+
+            <a href="index.html" style="display: block; margin-top: 15px; color: #666; text-decoration: none; font-size: 0.9rem; transition: 0.3s;" 
+            onmouseover="this.style.color='#2d5a27'; this.style.textDecoration='underline'" 
+            onmouseout="this.style.color='#666'; this.style.textDecoration='none'">
+            ← Back to Homepage
+            </a>
+        </div>
+    </div>
+
+    <script>
+        // 1. Show/Hide Password Toggle
+        function togglePassword() {
+            const passInput = document.getElementById('logPassword');
+            const toggleText = document.querySelector('.toggle-password');
+            if (passInput.type === "password") {
+                passInput.type = "text";
+                toggleText.innerText = "HIDE";
+            } else {
+                passInput.type = "password";
+                toggleText.innerText = "SHOW";
+            }
+        }
+
+        async function login() {
+            const email = document.getElementById('logEmail').value;
+            const password = document.getElementById('logPassword').value;
+            const msg = document.getElementById('msg');
+
+            try {
+                const response = await fetch('https://ge-finder-backend.onrender.com/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // Save user data for the session
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('userName', data.name);
+                    localStorage.setItem('userRole', data.role);
+
+                    alert("Hello, " + data.name + "!");
+
+                    // --- ROLE-BASED REDIRECTION ---
+                    if (data.role === 'engineer') {
+                        window.location.href = 'engineer-dashboard.html';
+                    } else {
+                        // Now sends clients to their specific dashboard to see replies
+                        window.location.href = 'client-dashboard.html';
+                    }
+                } else {
+                    msg.innerText = data.error || "Invalid login credentials";
+                    msg.style.color = "red";
+                }
+            } catch (err) {
+                msg.innerText = "Server error. Try again later.";
+                msg.style.color = "red";
+            }
+        }
+    </script>
+</body>
+</html>

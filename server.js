@@ -96,6 +96,27 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+app.get('/api/engineers', async (req, res) => {
+    // ... your existing code
+});
+
+// PASTE THE NEW ROUTE HERE
+app.get('/api/client-inquiries', async (req, res) => {
+    try {
+        const { name } = req.query; 
+        if (!name) return res.status(400).json({ error: "Name is required" });
+        
+        const inquiries = await Inquiry.find({ clientName: name }).sort({ date: -1 });
+        res.json(inquiries);
+    } catch (err) {
+        res.status(500).json({ error: "Server error fetching inquiries" });
+    }
+});
+
+// KEEP THIS AT THE VERY BOTTOM
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
 // 4. INQUIRY & REPLY ROUTES
 
 // SEND Inquiry
