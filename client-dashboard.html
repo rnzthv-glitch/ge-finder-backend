@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Inquiries - GE Finder</title>
+    <style>
+        :root { --primary: #2d5a27; --light: #f4fbf4; }
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            margin: 0; 
+            background: url('bg.png') no-repeat center fixed; 
+            background-size: cover; 
+        }
+        body::before { content: ''; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: -1; }
+        
+        .container { max-width: 800px; margin: 40px auto; padding: 20px; }
+        .card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 8px 25px rgba(0,0,0,0.3); }
+        
+        .inquiry-item { 
+            border: 1px solid #eee; 
+            padding: 20px; 
+            border-radius: 10px; 
+            margin-bottom: 20px; 
+            background: #fff;
+        }
+        
+        .reply-section { 
+            background: #f0f7f0; 
+            padding: 15px; 
+            border-radius: 8px; 
+            margin-top: 15px; 
+            border-left: 5px solid var(--primary); 
+        }
+        
+        .status-tag { 
+            font-size: 0.8rem; 
+            padding: 3px 8px; 
+            border-radius: 4px; 
+            font-weight: bold; 
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1 style="color: var(--primary); margin-top:0;">My Sent Inquiries</h1>
+            <p id="welcomeMsg">Welcome!</p>
+            <hr>
+            <div id="inquiryList">Loading your history...</div>
+            <br>
+            <a href="index.html" style="text-decoration: none; color: var(--primary); font-weight: bold;">← Back to Search</a>
+        </div>
+    </div>
+
+    <script>
+        async function loadClientHistory() {
+            const name = localStorage.getItem('userName');
+            document.getElementById('welcomeMsg').innerText = `Hello, ${name}. Here is the status of your requests:`;
+            const list = document.getElementById('inquiryList');
+
+            try {
+                // Fetch only inquiries belonging to this client
+                const response = await fetch(`https://ge-finder-backend.onrender.com/api/client-inquiries?name=${encodeURIComponent(name)}`);
+                const inquiries = await response.json();
+                
+                list.innerHTML = "";
+
+                if (inquiries.length === 0) {
+                    list.innerHTML = "<p style='color:#666;'>You haven't sent any inquiries yet.</p>";
+                    return;
+                }
+
+                inquiries.forEach(inq => {
+                    const hasReply = inq.reply && inq.reply.trim() !== "";
+                    
+                    list.innerHTML += `
+                        <div class="inquiry-item">
+                            <div style="display:flex; justify-content:space-between; align-items:start;">
+                                <strong>Project: ${inq.location} (${inq.lotSize} sqm)</strong>
+                                <span class="status-tag" style="background:${hasReply ? '#d4edda' : '#fff3cd'}; color:${hasReply ? '#155724' : '#856404'};">
+                                    ${hasReply ? 'Response Received' : 'Pending'}
+                                </span>
+                            </div>
+                            <p style="color:#666; font-size:0.9rem; margin-bottom:5px;">Sent on: ${new Date(inq.date).toLocaleDateString()}</p>
+                            <p><em>Your Message:</em> ${inq.message}</p>
+                            
+                            ${hasReply ? `
+                                <div class="reply-section">
+                                    <strong style="color:var(--primary);">Engineer's Response:</strong>
+                                    <p style="margin-top:10px;">${inq.reply}</p>
+                                </div>
+                            ` : ''}
+                        </div>
+                    `;
+                });
+            } catch (err) {
+                list.innerHTML = "<p style='color:red;'>Failed to load inquiries. Please check your connection.</p>";
+            }
+        }
+        loadClientHistory();
+    </script>
+</body>
+</html>
