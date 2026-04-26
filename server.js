@@ -1,8 +1,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const bcrypt = require('bcryptjs'); 
-const jwt = require('jsonwebtoken'); 
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 
@@ -96,9 +96,9 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-app.get('/api/engineers', async (req, res) => {
-    // ... your existing code
-});
+
+  
+
 
 // PASTE THE NEW ROUTE HERE
 app.get('/api/client-inquiries', async (req, res) => {
@@ -178,8 +178,4 @@ app.get('/api/engineers/:id', async (req, res) => {
     }
 });
 
-// 6. START SERVER
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-    console.log(`🚀 Server is running on port ${PORT}`);
-});
+
