@@ -42,8 +42,12 @@ const Inquiry = mongoose.model('Inquiry', new mongoose.Schema({
     clientEmail: String,
     location: String,
     lotSize: String,
-    message: String,
-    reply: { type: String, default: "" }, 
+    // This MUST be an array to support back-and-forth
+    messages: [{
+        sender: { type: String, enum: ['client', 'engineer'] },
+        text: String,
+        date: { type: Date, default: Date.now }
+    }],
     date: { type: Date, default: Date.now }
 }));
 
@@ -138,10 +142,23 @@ app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
 
 // 4. INQUIRY & REPLY ROUTES
 
-// SEND Inquiry
 app.post('/api/inquiries', async (req, res) => {
     try {
-        const newInquiry = new Inquiry(req.body);
+        const { engineerId, clientName, clientEmail, location, lotSize, message } = req.body;
+        
+        const newInquiry = new Inquiry({
+            engineerId,
+            clientName,
+            clientEmail,
+            location,
+            lotSize,
+            // Initialize the chat with the client's first message
+            messages: [{
+                sender: 'client',
+                text: message
+            }]
+        });
+
         await newInquiry.save();
         res.status(201).json({ message: "Inquiry sent!" });
     } catch (err) {
@@ -149,30 +166,20 @@ app.post('/api/inquiries', async (req, res) => {
     }
 });
 
-// GET Inquiries for Dashboard
-app.get('/api/my-inquiries', async (req, res) => {
+app.put('/api/inquiries/:id/message', async (req, res) => {
     try {
-        const inquiries = await Inquiry.find().sort({ date: -1 });
-        res.status(200).json(inquiries);
+        const { sender, text } = req.body;
+        const updatedInquiry = await Inquiry.findByIdAndUpdate(
+            req.params.id,
+            { $push: { messages: { sender, text } } }, // Pushes new chat bubble to the array
+            { new: true }
+        );
+        res.json(updatedInquiry);
     } catch (err) {
-        res.status(500).json({ error: "Database connection failed" });
+        res.status(500).json({ error: "Failed to send message" });
     }
 });
 
-// SUBMIT a Reply (This fixes your dashboard issue!)
-app.put('/api/inquiries/:id/reply', async (req, res) => {
-    try {
-        const { reply } = req.body;
-        const updatedInquiry = await Inquiry.findByIdAndUpdate(
-            req.params.id, 
-            { reply: reply }, 
-            { new: true }
-        );
-        res.json({ message: "Reply saved!", updatedInquiry });
-    } catch (err) {
-        res.status(500).json({ error: "Failed to save reply" });
-    }
-});
 
 // 5. SEARCH & PROFILE ROUTES
 
