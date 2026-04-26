@@ -96,7 +96,7 @@
         <div class="modal-content">
             <h2 style="color:var(--primary); margin-top:0;">Project Details</h2>
             <p><strong>Client Message:</strong></p>
-            <p id="modalMessage" style="background:#f9f9f9; padding:10px; border-radius:8px;"></p>
+            <div id="modalMessage" style="background:#f9f9f9; padding:15px; border-radius:8px; max-height: 250px; overflow-y: auto; margin-bottom: 15px;"></div>
             
             <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
             
@@ -125,7 +125,7 @@
             }
         });
 
-        async function loadInquiries() {
+    async function loadInquiries() {
             const token = localStorage.getItem('token');
             const list = document.getElementById('inquiryList');
             const countDisplay = document.getElementById('inquiryCount');
@@ -145,11 +145,13 @@
                 }
 
                 inquiries.reverse().forEach(inq => {
-                    const isReplied = inq.reply && inq.reply.trim() !== "";
+                    // NEW: Check the last message to determine status
+                    const lastMsg = inq.messages[inq.messages.length - 1];
+                    const needsReply = lastMsg.sender === 'client';
                     
-                    const statusBadge = isReplied 
-                        ? `<span style="background:#e8f5e9; color:#2e7d32; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;">Replied</span>`
-                        : `<span style="background:#fff3e0; color:#e65100; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;">New</span>`;
+                    const statusBadge = needsReply 
+                        ? `<span style="background:#fff3e0; color:#e65100; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;">Pending Reply</span>`
+                        : `<span style="background:#e8f5e9; color:#2e7d32; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;">Active Chat</span>`;
 
                     const row = `
                         <tr>
@@ -158,78 +160,65 @@
                             <td>${inq.lotSize} sqm</td>
                             <td>${statusBadge}</td>
                             <td>
-                                <button class="btn" onclick="showInquiryDetails('${inq.message}', '${inq._id}', '${inq.reply || ''}')">
-                                    ${isReplied ? 'View Reply' : 'View Details'}
-                                </button>
+                                <button class="btn" onclick="showChat('${inq._id}')">Open Conversation</button>
                             </td>
                         </tr>
                     `;
                     list.innerHTML += row;
                 });
-
             } catch (err) {
                 list.innerHTML = "<tr><td colspan='5' style='text-align:center; color:red;'>Failed to load data.</td></tr>";
             }
         }
 
-        function showInquiryDetails(msg, id, existingReply) {
+        async function showChat(id) {
             currentInquiryId = id;
-            document.getElementById('modalMessage').innerText = msg || "No additional notes provided.";
-            document.getElementById('replyText').value = existingReply || "";
+            const modalContent = document.getElementById('modalMessage');
+            modalContent.innerHTML = "Loading conversation...";
             document.getElementById('detailsModal').style.display = 'flex';
+
+            try {
+                const response = await fetch('https://ge-finder-backend.onrender.com/api/my-inquiries', {
+                    headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` }
+                });
+                const inquiries = await response.json();
+                const inq = inquiries.find(item => item._id === id);
+
+                // NEW: Loop through all messages for the chat bubble effect
+                modalContent.innerHTML = inq.messages.map(msg => `
+                    <div style="margin-bottom: 12px; text-align: ${msg.sender === 'engineer' ? 'right' : 'left'};">
+                        <div style="display: inline-block; padding: 10px 15px; border-radius: 15px; 
+                            background: ${msg.sender === 'engineer' ? 'var(--primary)' : '#e9ecef'}; 
+                            color: ${msg.sender === 'engineer' ? 'white' : '#333'}; 
+                            max-width: 80%; word-wrap: break-word; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                            ${msg.text}
+                        </div>
+                    </div>
+                `).join('');
+            } catch (err) {
+                modalContent.innerHTML = "Error loading chat.";
+            }
         }
 
         async function sendReply() {
-            const replyTextarea = document.getElementById('replyText');
-            const replyValue = replyTextarea.value;
-            
-            console.log("Attempting to send reply for ID:", currentInquiryId);
-
-            if (!currentInquiryId) {
-                alert("Error: No inquiry ID found. Please refresh and try again.");
-                return;
-            }
-
-            if (!replyValue.trim()) {
-                alert("Please enter a message before sending.");
-                return;
-            }
+            const text = document.getElementById('replyText').value;
+            if (!text.trim()) return alert("Please type a message.");
 
             try {
-                // Change button text so you know it's working
-                const sendBtn = document.querySelector('button[onclick="sendReply()"]');
-                const originalText = sendBtn.innerText;
-                sendBtn.innerText = "Sending...";
-                sendBtn.disabled = true;
-
-                const response = await fetch(`https://ge-finder-backend.onrender.com/api/inquiries/${currentInquiryId}/reply`, {
+                // NEW: Use the dynamic message route
+                const response = await fetch(`https://ge-finder-backend.onrender.com/api/inquiries/${currentInquiryId}/message`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ reply: replyValue })
+                    body: JSON.stringify({ sender: 'engineer', text: text })
                 });
 
-                const result = await response.json();
-
                 if (response.ok) {
-                    alert("✅ " + result.message); // This should pop up "Reply saved!"
-                    closeModal();
-                    await loadInquiries(); // This refreshes the table to show "Replied"
-                } else {
-                    alert("❌ Server Error: " + (result.error || "Unknown error"));
+                    document.getElementById('replyText').value = ""; 
+                    showChat(currentInquiryId); 
+                    loadInquiries(); 
                 }
-                
-                // Reset button
-                sendBtn.innerText = originalText;
-                sendBtn.disabled = false;
-
             } catch (err) {
-                console.error("Connection Error:", err);
-                alert("❌ Connection Error: Could not reach the backend. Check your internet or Render status.");
-                
-                // Reset button
-                const sendBtn = document.querySelector('button[onclick="sendReply()"]');
-                sendBtn.innerText = "Send Reply";
-                sendBtn.disabled = false;
+                alert("Failed to send reply.");
             }
         }
 

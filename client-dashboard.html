@@ -71,26 +71,36 @@
                     return;
                 }
 
-                inquiries.forEach(inq => {
-                    const hasReply = inq.reply && inq.reply.trim() !== "";
-                    
-                    list.innerHTML += `
-                        <div class="inquiry-item">
-                            <div style="display:flex; justify-content:space-between; align-items:start;">
-                                <strong>Project: ${inq.location} (${inq.lotSize} sqm)</strong>
-                                <span class="status-tag" style="background:${hasReply ? '#d4edda' : '#fff3cd'}; color:${hasReply ? '#155724' : '#856404'};">
-                                    ${hasReply ? 'Response Received' : 'Pending'}
-                                </span>
+                inquiries.reverse().forEach(inq => {
+                    // Generate chat bubbles
+                    const chatHtml = inq.messages.map(msg => `
+                        <div style="margin-bottom: 12px; text-align: ${msg.sender === 'client' ? 'right' : 'left'};">
+                            <div style="display: inline-block; padding: 10px 15px; border-radius: 15px; 
+                                background: ${msg.sender === 'client' ? 'var(--primary)' : '#e9ecef'}; 
+                                color: ${msg.sender === 'client' ? 'white' : '#333'}; 
+                                max-width: 80%; word-wrap: break-word; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                                <strong>${msg.sender === 'client' ? 'You' : 'Engineer'}:</strong> ${msg.text}
                             </div>
-                            <p style="color:#666; font-size:0.9rem; margin-bottom:5px;">Sent on: ${new Date(inq.date).toLocaleDateString()}</p>
-                            <p><em>Your Message:</em> ${inq.message}</p>
+                            <div style="font-size: 0.65rem; color: #999; margin-top: 4px;">
+                                ${new Date(msg.date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </div>
+                        </div>
+                    `).join('');
+
+                    list.innerHTML += `
+                        <div class="inquiry-item" style="border-left: 5px solid var(--primary);">
+                            <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom: 15px;">
+                                <strong>Project: ${inq.location} (${inq.lotSize} sqm)</strong>
+                            </div>
                             
-                            ${hasReply ? `
-                                <div class="reply-section">
-                                    <strong style="color:var(--primary);">Engineer's Response:</strong>
-                                    <p style="margin-top:10px;">${inq.reply}</p>
-                                </div>
-                            ` : ''}
+                            <div style="background: #fdfdfd; padding: 15px; border: 1px solid #eee; border-radius: 12px; margin-bottom: 15px; max-height: 250px; overflow-y: auto;">
+                                ${chatHtml}
+                            </div>
+
+                            <div style="display: flex; gap: 8px;">
+                                <input type="text" id="reply-text-${inq._id}" placeholder="Type a follow-up message..." style="flex-grow: 1; padding: 10px; border-radius: 8px; border: 1px solid #ccc;">
+                                <button class="btn" style="background: var(--primary); color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer;" onclick="sendClientReply('${inq._id}')">Send</button>
+                            </div>
                         </div>
                     `;
                 });
@@ -99,6 +109,34 @@
             }
         }
         loadClientHistory();
+
+        async function sendClientReply(inquiryId) {
+            const text = document.getElementById(`reply-text-${inquiryId}`).value;
+            const token = localStorage.getItem('token');
+
+            if (!text.trim()) return alert("Please type a message.");
+
+            try {
+                // Uses the new route for back-and-forth messaging
+                const response = await fetch(`https://ge-finder-backend.onrender.com/api/inquiries/${inquiryId}/message`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` 
+                    },
+                    body: JSON.stringify({ sender: 'client', text: text })
+                });
+
+                if (response.ok) {
+                    location.reload(); // Refresh to see the new message bubbles
+                } else {
+                    alert("Failed to send message.");
+                }
+            } catch (err) {
+                alert("Connection error. Check if your server is running.");
+            }
+        }
+
     </script>
 </body>
 </html>
