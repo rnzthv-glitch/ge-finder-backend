@@ -135,7 +135,16 @@ app.post('/api/applications', async (req, res) => {
         res.status(500).json({ error: "Failed to submit application." });
     }
 });
-
+// GET Inquiries for the logged-in Engineer
+app.get('/api/my-inquiries', async (req, res) => {
+    try {
+        // This fetches all inquiries so the engineer can see their leads
+        const inquiries = await Inquiry.find().sort({ date: -1 });
+        res.status(200).json(inquiries);
+    } catch (err) {
+        res.status(500).json({ error: "Database connection failed" });
+    }
+});
 // KEEP THIS AT THE VERY BOTTOM
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
