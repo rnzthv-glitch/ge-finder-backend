@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Engineer Dashboard - GE Finder</title>
+    <style>
+        :root { --primary: #2d5a27; --dark: #1e3d1a; --light: #f4fbf4; --gold: #fbbf24; }
+        body { font-family: 'Segoe UI', sans-serif; margin: 0; background-color: var(--light); color: #333; }
+        
+        .header { background: var(--primary); color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .container { max-width: 1100px; margin: 40px auto; padding: 0 20px; }
+        
+        .welcome-card { background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-left: 5px solid var(--primary); margin-bottom: 30px; }
+        
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .stat-box { background: white; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .stat-box h3 { color: var(--primary); margin: 5px 0; font-size: 2rem; }
+
+        .table-container { background: white; padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th { text-align: left; background: var(--light); color: var(--primary); padding: 12px; border-bottom: 2px solid #ddd; }
+        td { padding: 12px; border-bottom: 1px solid #eee; }
+
+        .btn { background: var(--primary); color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 500; transition: 0.3s; }
+        .btn:hover { background: var(--dark); }
+        .btn-logout { background: #cc3300; }
+
+        /* Modal Styles */
+        .modal { display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.6); justify-content:center; align-items:center; z-index:1000; }
+        .modal-content { background:white; padding:30px; border-radius:15px; max-width:450px; width:90%; box-shadow:0 10px 25px rgba(0,0,0,0.2); }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <strong style="font-size: 1.3rem;">GE Finder | Professional Panel</strong>
+        </div>
+        <div>
+            <a href="index.html" style="color: white; margin-right: 20px; text-decoration: none;">Public Site</a>
+            <button class="btn btn-logout" onclick="logout()">Logout</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="welcome-card">
+            <h1 id="welcomeTitle">Welcome, Engineer</h1>
+            <p>Manage your professional inquiries and project leads across Batangas and beyond.</p>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-box"><p>Profile Views</p><h3>158</h3></div>
+            <div class="stat-box"><p>Total Inquiries</p><h3 id="inquiryCount">0</h3></div>
+            <div class="stat-box"><p>Rating</p><h3 style="color: var(--gold);">4.9 ★</h3></div>
+        </div>
+
+        <div class="table-container">
+            <h2 style="color: var(--primary);">Recent Client Inquiries</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Client</th>
+                        <th>Location</th>
+                        <th>Lot Size</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="inquiryList">
+                    <tr><td colspan="5" style="text-align:center; padding:20px; color:#888;">Loading inquiries...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="detailsModal" class="modal">
+        <div class="modal-content">
+            <h2 style="color:var(--primary); margin-top:0;">Project Details</h2>
+            <hr style="border:0; border-top:1px solid #eee; margin:15px 0;">
+            <p><strong>Notes/Message:</strong></p>
+            <p id="modalMessage" style="color:#555; line-height:1.5; background:#f9f9f9; padding:15px; border-radius:8px;"></p>
+            <button class="btn" style="width:100%; margin-top:10px;" onclick="closeModal()">Close</button>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const name = localStorage.getItem('userName');
+            const role = localStorage.getItem('userRole');
+
+            if (!name || role !== 'engineer') {
+                window.location.href = 'login.html';
+            } else {
+                document.getElementById('welcomeTitle').innerText = "Welcome, Engr. " + name;
+                loadInquiries();
+            }
+        });
+
+        async function loadInquiries() {
+            const token = localStorage.getItem('token');
+            const list = document.getElementById('inquiryList');
+            const countDisplay = document.getElementById('inquiryCount');
+
+            try {
+                // Fetching from your actual backend
+                const response = await fetch('https://ge-finder-backend.onrender.com/api/my-inquiries', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const inquiries = await response.json();
+                list.innerHTML = "";
+                countDisplay.innerText = inquiries.length;
+
+                if (inquiries.length === 0) {
+                    list.innerHTML = "<tr><td colspan='5' style='text-align:center; padding:30px; color:#888;'>No inquiries found yet. Keep your profile updated!</td></tr>";
+                    return;
+                }
+
+                inquiries.reverse().forEach(inq => {
+                    const row = `
+                        <tr>
+                            <td><strong>${inq.clientName}</strong></td>
+                            <td>${inq.location}</td>
+                            <td>${inq.lotSize} sqm</td>
+                            <td><span style="background:#fff3e0; color:#e65100; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:bold;">New</span></td>
+                            <td>
+                                <button class="btn" onclick="showInquiryDetails('${inq.message}')">View Details</button>
+                            </td>
+                        </tr>
+                    `;
+                    list.innerHTML += row;
+                });
+
+            } catch (err) {
+                list.innerHTML = "<tr><td colspan='5' style='text-align:center; color:red;'>Failed to load data. Please check connection.</td></tr>";
+            }
+        }
+
+        function showInquiryDetails(msg) {
+            document.getElementById('modalMessage').innerText = msg || "No additional notes provided.";
+            document.getElementById('detailsModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('detailsModal').style.display = 'none';
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
